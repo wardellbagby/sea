@@ -3,12 +3,12 @@ package com.wardellbagby.sea.recents
 import androidx.compose.Composable
 import androidx.ui.core.Alignment
 import androidx.ui.core.Modifier
-import androidx.ui.core.drawShadow
 import androidx.ui.foundation.AdapterList
 import androidx.ui.foundation.Box
 import androidx.ui.foundation.Text
 import androidx.ui.foundation.TextField
 import androidx.ui.foundation.TextFieldValue
+import androidx.ui.foundation.drawBorder
 import androidx.ui.foundation.shape.corner.RoundedCornerShape
 import androidx.ui.layout.Column
 import androidx.ui.layout.ColumnScope.weight
@@ -16,6 +16,7 @@ import androidx.ui.layout.fillMaxWidth
 import androidx.ui.layout.padding
 import androidx.ui.material.Card
 import androidx.ui.material.ListItem
+import androidx.ui.material.MaterialTheme
 import androidx.ui.text.TextRange
 import androidx.ui.text.TextStyle
 import androidx.ui.text.font.FontWeight
@@ -59,8 +60,7 @@ class RecentsWorkflow
 
   @JsonClass(generateAdapter = true)
   data class State(
-    val username: String,
-    val usernameSelection: Pair<Int, Int>,
+    val username: TextFieldValue,
     val nowPlaying: Listen?,
     val listeningHistory: List<Listen>?
   )
@@ -77,8 +77,7 @@ class RecentsWorkflow
     snapshot: Snapshot?
   ): State {
     return snapshot?.toData(moshi) ?: State(
-        username = "wardellbagby",
-        usernameSelection = 12 to 12,
+        username = TextFieldValue("wardellbagby", TextRange(12, 12)),
         listeningHistory = null,
         nowPlaying = null
     )
@@ -92,37 +91,32 @@ class RecentsWorkflow
     context: RenderContext<State, Nothing>
   ): RecentsRendering {
     context.runningWorker(
-        recentsRepository.recentListens(state.username)
+        recentsRepository.recentListens(state.username.text)
             .repeatEvery(5)
             .asWorker(),
-        key = state.username
+        key = state.username.text
     ) {
       action {
         nextState = nextState.copy(listeningHistory = it)
       }
     }
     context.runningWorker(
-        recentsRepository.nowPlaying(state.username)
+        recentsRepository.nowPlaying(state.username.text)
             .repeatEvery(5)
             .asWorker(),
-        key = state.username
+        key = state.username.text
     ) {
       action {
         nextState = nextState.copy(nowPlaying = it.getOrNull())
       }
     }
     return RecentsRendering(
-        username = TextFieldValue(
-            text = state.username,
-            selection = TextRange(state.usernameSelection.first, state.usernameSelection.second)
-        ),
+        username = state.username,
         nowPlaying = state.nowPlaying,
         listens = state.listeningHistory ?: listOf(),
         onUsernameChanged = {
           context.actionSink.send(action {
-            nextState = nextState.copy(
-                username = it.text, usernameSelection = it.selection.start to it.selection.end
-            )
+            nextState = nextState.copy(username = it)
           })
         }
     )
@@ -159,7 +153,11 @@ val RecentsBinding = composedViewFactory<RecentsRendering> { rendering, _ ->
         value = rendering.username,
         onValueChange = rendering.onUsernameChanged,
         modifier = Modifier.fillMaxWidth()
-            .drawShadow(1.dp, shape = RoundedCornerShape(1.dp))
+            .drawBorder(
+                size = 1.dp,
+                shape = RoundedCornerShape(1.dp),
+                color = MaterialTheme.colors.onBackground
+            )
             .padding(16.dp)
     )
 

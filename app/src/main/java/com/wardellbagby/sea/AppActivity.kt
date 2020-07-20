@@ -4,7 +4,11 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.Composable
 import androidx.ui.core.setContent
+import androidx.ui.foundation.isSystemInDarkTheme
 import androidx.ui.material.MaterialTheme
+import androidx.ui.material.Surface
+import androidx.ui.material.darkColorPalette
+import androidx.ui.material.lightColorPalette
 import com.squareup.workflow.diagnostic.SimpleLoggingDiagnosticListener
 import com.squareup.workflow.ui.ViewEnvironment
 import com.squareup.workflow.ui.ViewRegistry
@@ -27,12 +31,14 @@ private val viewRegistry = ViewRegistry(MainViewRegistry)
 private val viewEnvironment = ViewEnvironment(viewRegistry)
 
 @Composable fun App() {
-  MaterialTheme {
-    WorkflowContainer(
-        workflow = APP_COMPONENT.appWorkflow(),
-        viewEnvironment = viewEnvironment,
-        diagnosticListener = SimpleLoggingDiagnosticListener()
-    )
+  MaterialTheme(if (isSystemInDarkTheme()) darkColorPalette() else lightColorPalette()) {
+    Surface {
+      WorkflowContainer(
+          workflow = APP_COMPONENT.appWorkflow(),
+          viewEnvironment = viewEnvironment,
+          diagnosticListener = SimpleLoggingDiagnosticListener(),
+      )
+    }
   }
 }
 

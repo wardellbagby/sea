@@ -1,9 +1,13 @@
 package com.wardellbagby.sea
 
 import android.app.Application
+import androidx.ui.foundation.TextFieldValue
+import androidx.ui.text.TextRange
 import com.squareup.hephaestus.annotations.ContributesTo
 import com.squareup.hephaestus.annotations.MergeComponent
+import com.squareup.moshi.FromJson
 import com.squareup.moshi.Moshi
+import com.squareup.moshi.ToJson
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.wardellbagby.sea.data.ListenBrainzResponseFactory
 import com.wardellbagby.sea.service.ListenBrainzService
@@ -40,6 +44,7 @@ object AppModule {
         .add(ListenBrainzResponseFactory)
         .add(MoshiSealedJsonAdapterFactory())
         .add(KotlinJsonAdapterFactory())
+        .add(TextFieldValueAdapter)
         .build()
   }
 }
@@ -49,7 +54,6 @@ object AppModule {
 object NetworkModule {
   @Provides
   fun provideRetrofit(moshi: Moshi): Retrofit {
-    //get("https://api.listenbrainz.org/")
     return Retrofit.Builder()
         .addConverterFactory(MoshiConverterFactory.create(moshi))
         .baseUrl(
@@ -63,4 +67,25 @@ object NetworkModule {
 
   @Provides
   fun provideListenBrainzService(retrofit: Retrofit): ListenBrainzService = retrofit.create()
+}
+
+private object TextFieldValueAdapter {
+  @ToJson fun toJson(value: TextFieldValue): Map<String, String> {
+    return mapOf(
+        "text" to value.text,
+        "start" to value.selection.start.toString(),
+        "end" to value.selection.end.toString()
+    )
+  }
+
+  @Suppress("MapGetWithNotNullAssertionOperator")
+  @FromJson fun fromJson(value: Map<String, String>): TextFieldValue {
+    return TextFieldValue(
+        text = value["text"]!!,
+        selection = TextRange(
+            start = value["start"]!!.toInt(),
+            end = value["end"]!!.toInt()
+        )
+    )
+  }
 }
